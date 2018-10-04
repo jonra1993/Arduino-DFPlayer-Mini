@@ -28,13 +28,22 @@ DFPlayer - A Mini MP3 Player For Arduino
 const int pulsador=2;
 const int led=13;
 double lapso=1000000; //microsegundos 
-volatile int contador = 1;
-volatile int maximoTime = 30;
+volatile int contador = 0;
+volatile int maximoTime = 60;
 volatile bool valTime = false;
 volatile int maximo = 0;
 volatile bool tempo;
 volatile bool estado=false;
 volatile int randNumber;
+volatile int volumen=20;
+volatile int eq = 0;
+volatile char cadena[10];   //LONGITUD MAXIMA DE LA CADENA DE CARACTERES ES 100
+volatile int x = 0;
+
+volatile int addressVol=1;
+volatile int addressEq=2;
+volatile int addressTime=3;
+
 
 SoftwareSerial mySoftwareSerial(10, 11); // RX, TX
 DFRobotDFPlayerMini myDFPlayer;
@@ -50,6 +59,9 @@ void setup()
 	attachInterrupt(0, pulso, FALLING);
 	pinMode(led,OUTPUT);
 
+	maximoTime = EEPROM.read(addressTime);
+
+
 	Timer1.initialize(lapso);  //esta en microsegundos
 	Timer1.attachInterrupt(timerInt); // activa interrupcion del timer1
 
@@ -58,31 +70,50 @@ void setup()
 	Serial.begin(19200);
   
 	Serial.println();
-	Serial.println(F("DFRobot DFPlayer Mini Demo"));
-	Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+	Serial.println(F("Reproductor de audio aleatorio. by: Jonathan Vargas"));
   
 	digitalWrite(led, HIGH);
 
 	if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
-	Serial.println(F("Unable to begin:"));
-	Serial.println(F("1.Please recheck the connection!"));
-	Serial.println(F("2.Please insert the SD card!"));
+	Serial.println(F("No se ha podido iniciar:"));
+	Serial.println(F("1.Revise la conexión!"));
+	Serial.println(F("2.Inserte la memoria SD!"));
 	while(!myDFPlayer.begin(mySoftwareSerial));
 	}
-	Serial.println(F("DFPlayer Mini online."));
+	Serial.println(F("DFPlayer Conectado."));
   
 	//----Set volume----
-	myDFPlayer.volume(20);  //Set volume value (0~30).
+	volumen = EEPROM.read(addressVol);
+	myDFPlayer.volume(volumen);  //Set volume value (0~30).
 //  myDFPlayer.volumeUp(); //Volume Up
 //  myDFPlayer.volumeDown(); //Volume Down
 
 	//----Set different EQ----
-	myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
-//  myDFPlayer.EQ(DFPLAYER_EQ_POP);
-//  myDFPlayer.EQ(DFPLAYER_EQ_ROCK);
-//  myDFPlayer.EQ(DFPLAYER_EQ_JAZZ);
-//  myDFPlayer.EQ(DFPLAYER_EQ_CLASSIC);
-//  myDFPlayer.EQ(DFPLAYER_EQ_BASS);
+	eq = EEPROM.read(addressEq);
+	switch (eq)
+	{
+		case 0:
+			myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
+			break;
+		case 1:
+			myDFPlayer.EQ(DFPLAYER_EQ_POP);
+			break;
+		case 2:
+			myDFPlayer.EQ(DFPLAYER_EQ_ROCK);
+			break;
+		case 3:
+			myDFPlayer.EQ(DFPLAYER_EQ_JAZZ);
+			break;
+		case 4:
+			myDFPlayer.EQ(DFPLAYER_EQ_CLASSIC);
+			break;
+		case 5:
+			myDFPlayer.EQ(DFPLAYER_EQ_BASS);
+			break;
+		default:
+			myDFPlayer.EQ(DFPLAYER_EQ_NORMAL);
+			break;
+	}
   
 	//----Set device we use SD as default----
 //  myDFPlayer.outputDevice(DFPLAYER_DEVICE_U_DISK);
@@ -153,12 +184,18 @@ void setup()
 	Serial.print("readFileCountsInFolder: ");
 	Serial.println(myDFPlayer.readFileCountsInFolder(3)); //read fill counts in folder SD:/03
 */
-	Serial.print("readFileCounts: ");
+	Serial.print("Numero de canciones: ");
 	Serial.println(myDFPlayer.readFileCounts()); //read all file counts in SD card
 
 	maximo = myDFPlayer.readFileCounts();
 
- 
+	
+	Serial.print("Tiempo de corte: ");
+	Serial.println(maximoTime);
+	Serial.print("Volumen: ");
+	Serial.println(volumen);
+	Serial.print("Ecualizador: ");
+	Serial.println(eq);
 
 }
 
@@ -166,33 +203,29 @@ void loop()
 {	
 
 	if (valTime == true) {
-		Serial.println("paso10");
+		//Serial.println("paso10");
 		valTime = false;
 		myDFPlayer.stop();
 	}
 	printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
 
-	//if (myDFPlayer.available()) {
 	if (estado == true) {
 		estado = false;
 		contador = 0;
-		myDFPlayer.play(randNumber);  //Play the first mp3														   //}	//delay(20); //espera 2 segundos 
+		myDFPlayer.play(randNumber);  //Play the first mp3											
 	}
-	//FUNCION ALEATORIA
     
 }
 
 
 //
-void timerInt(void) //esta calibrado para 1000ms
+void timerInt(void) //esta calibrado para 1000000us
 {
 	if (contador >= maximoTime) {
 		valTime = true;
 		contador = 0;
 	}
 	else contador++;
-	//Serial.println(contador);
-
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /////   PULSADOR
@@ -209,7 +242,7 @@ void pulso()
 			randNumber = random(1, maximo);
 		} while (randNumber == ranTempo);
 		
-		Serial.println(randNumber);
+		//Serial.println(randNumber);
 		estado = true;
 
 	} 
@@ -220,18 +253,107 @@ void pulso()
 void serialEvent() {
 
   //se debe enviar la cada ejemplo 005 020  100
-  if (Serial.available()) {
-    // get the new byte: 
-    char inChar = (char)Serial.read();
-    
-    switch (inChar){
-      case 'a':
-          Serial.print("readCurrentFileNumber: ");
-          Serial.println(myDFPlayer.readCurrentFileNumber()); //read current play file number
-      break;
-    }
-    
-  }
+	if (Serial.available()) {
+		// get the new byte: 
+		// get the new byte: 
+		char inChar = (char)Serial.read();
+		if (inChar == 'f')   //SI EL DATO DE ENTRADA ES ENTER
+		{
+			cadena[x++] = '\0';  //indica fin de cadena
+			x = 0;                 //se resetea el contador
+
+			if (cadena[0] == 'i')    //inicia la comunicacion
+			{
+				if (cadena[1]=='t') {
+					int xx = cadena[2] - 48; //decima
+					int yy = cadena[3] - 48; //unidad
+					int zz = cadena[4] - 48; //unidad
+
+					if ((xx >= 0 && xx<=3)&&(yy >= 0 || yy <= 9)&&(zz >= 0 || zz <= 9)) {
+						int tempo = xx * 100 + yy * 10 + zz;
+						EEPROM.write(addressTime, tempo);
+						Serial.print("Cambio de tiempo");
+						Serial.println(tempo);
+					}
+					else Serial.print("Valor incorrecto!!");
+					
+
+				}
+				else if (cadena[1] == 'v'){
+					int xxx = cadena[2] - 48; //decima
+					int yyy = cadena[3] - 48; //unidad
+					if ((xxx >= 0 && xxx <= 3) && (yyy >= 0 || yyy <= 9)) {
+						int tem = xxx * 10 + yyy;
+						if (tem>30) tem = 30;
+						EEPROM.write(addressVol, tem);
+						Serial.print("Cambio de volumen: ");
+						Serial.println(tem);
+					}
+					else Serial.print("Valor incorrecto!!");
+				}
+				else if(cadena[1]=='e'){
+					switch (cadena[2])
+					{
+					case '0':
+						EEPROM.write(addressEq, 0);
+						Serial.print("Cambio de valor de equalizador: ");
+						Serial.println("DFPLAYER_EQ_NORMAL");
+						break;
+					case '1':
+						EEPROM.write(addressEq, 1);
+						Serial.print("Cambio de valor de equalizador: ");
+						Serial.println("DFPLAYER_EQ_POP");
+						break;
+					case '2':
+						EEPROM.write(addressEq, 2);
+						Serial.print("Cambio de valor de equalizador: ");
+						Serial.println("DFPLAYER_EQ_ROCK");
+						break;
+					case '3':
+						EEPROM.write(addressEq, 3);
+						Serial.print("Cambio de valor de equalizador: ");
+						Serial.println("DFPLAYER_EQ_JAZZ");
+						break;
+					case '4':
+						EEPROM.write(addressEq, 4);
+						Serial.print("Cambio de valor de equalizador: ");
+						Serial.println("DFPLAYER_EQ_CLASSIC");
+						break;
+					case '5':
+						EEPROM.write(addressEq, 5);
+						Serial.print("Cambio de valor de equalizador: ");
+						Serial.println("DFPLAYER_EQ_BASS");
+						break;
+					}
+				}
+				else if (cadena[1] == 'c'){
+					Serial.print("Canción actual: ");
+					Serial.println(myDFPlayer.readCurrentFileNumber());
+
+				}
+				else if (cadena[1] == 'a'){
+					Serial.print("Número aleatorio: ");
+					Serial.println(randNumber);
+
+				}
+				else if (cadena[1] == 'p'){
+					int ranTempo = randNumber;
+					do {
+						randNumber = random(1, maximo);
+					} while (randNumber == ranTempo);
+
+					Serial.println(randNumber);
+					estado = true;
+				}
+			}
+			else Serial.println("protocolo equivocado!!");
+		}
+		else
+		{
+			cadena[x++] = inChar;   //SE GUARDA EL DATO EN UNA POSICION DEL VECTOR
+		}
+	   
+	}
 }
 
 
