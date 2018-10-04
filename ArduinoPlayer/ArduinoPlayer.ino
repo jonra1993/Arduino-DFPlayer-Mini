@@ -19,6 +19,20 @@ DFPlayer - A Mini MP3 Player For Arduino
  2.This code is tested on Arduino Uno, Leonardo, Mega boards.
  ****************************************************/
 
+
+/*
+Protocolo de comunicacion
+
+tiempo de reproduccion itxyzf  x[0,9] ; y[0,9]; z[0,9]
+cmbio de volumen       ivxyf   x[0,3] ; y[0,9]
+cambio de equalizador  iexf    x[0,5]
+cabcion actual         icf
+numero aleatorio       iaf
+enviar pulsacion       ipf
+
+
+
+*/
 #include "Arduino.h"
 #include "SoftwareSerial.h"
 #include "DFRobotDFPlayerMini.h"
