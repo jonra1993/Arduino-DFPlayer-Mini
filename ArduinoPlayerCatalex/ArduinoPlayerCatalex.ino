@@ -6,8 +6,10 @@ Protocolo de comunicacion
 tiempo de reproduccion itxyzf  x[0,9] ; y[0,9]; z[0,9]
 maximo aleatorio       ihxyzf  x[0,9] ; y[0,9]; z[0,9]
 minimo aleatorio       ilxyzf  x[0,9] ; y[0,9]; z[0,9]
-cmbio de volumen       ivxyzf   x[0,3] ; y[0,9]
-cabcion actual         icf
+initial song		   iixyzf   x[0,9] ; y[0,9]; z[0,9]
+cambio de volumen      ivxyf   x[0,3] ; y[0,9]
+play song		       irxyzf   x[0,9] ; y[0,9]; z[0,9]
+stop song			   isf
 numero aleatorio       iaf
 enviar pulsacion       ipf
 
@@ -21,9 +23,10 @@ enviar pulsacion       ipf
 
 const int pulsador=2;
 const int led=13;
-double lapso=1000000; //microsegundos 
+double lapso=10000; //microsegundos = 10ms
 volatile int contador = 0;
 volatile int contador1 = 0;
+volatile int contador2 = 0;
 volatile int maximoTime = 60;
 volatile bool valTime = false;
 volatile int minimo = 0;
@@ -31,7 +34,8 @@ volatile int maximo = 0;
 volatile bool tempo;
 volatile bool estado=false;
 volatile bool aux = false;
-volatile int randNumber[2] = {1,2};
+volatile int randNumber[40];
+volatile int elementos;
 volatile int volumen=20;
 volatile int eq = 0;
 volatile char cadena[10];   //LONGITUD MAXIMA DE LA CADENA DE CARACTERES ES 100
@@ -41,6 +45,7 @@ volatile int addressVol=1;
 volatile int addressMin=5;
 volatile int addressMax = 6;
 volatile int addressTime=3;
+volatile int addressInitial = 8;
 
 #define TX 11
 #define RX 10
@@ -69,7 +74,8 @@ void setup()
 
 	mp3.sendCommand(CMD_SEL_DEV, 0, 2);   //select sd-card
 
-  	Serial.println(F("Reproductor de audio aleatorio. by: Jonathan Vargas"));
+  	Serial.println("Reproductor de audio aleatorio.");
+	Serial.println("Desarrollado por: Jonathan Vargas");
   
 	//----Set volume----
 	volumen = EEPROM.read(addressVol);
@@ -79,6 +85,7 @@ void setup()
 	//set max canciones
 	minimo = EEPROM.read(addressMin);
 	maximo = EEPROM.read(addressMax);
+
 	Serial.print("Tiempo de corte: ");
 	Serial.println(maximoTime);
 	Serial.print("Volumen: ");
@@ -88,19 +95,28 @@ void setup()
 	Serial.print("Maximo: ");
 	Serial.println(maximo);
 
-	//mp3.play(99, volumen);
+	elementos = (int) round((maximo-minimo+1) / 5);
+
+	Serial.print("Filtro: ");
+	Serial.println(elementos);
+	
+	contador2 = minimo;
 	attachInterrupt(0, pulso, FALLING); //activa interrupcion
 	Timer1.initialize(lapso);  //esta en microsegundos
 	Timer1.attachInterrupt(timerInt); // activa interrupcion del timer1
 	delay(1000);
-	mp3.play(12, volumen);
+	volatile int num = 2;
+
+	int init = EEPROM.read(addressInitial);
+	Serial.print("Cancion inicial: ");
+	Serial.println(init);
+	mp3.play(init, volumen);
 	digitalWrite(led, HIGH);
 }
 
 void loop()
 {
 	if (valTime == true) {
-		//Serial.println("paso10");
 		valTime = false;
 		mp3.stop();
 	}
@@ -109,6 +125,8 @@ void loop()
 		estado = false;
 		contador = 0;
 		mp3.play(randNumber[0], volumen);
+		delay(3000);
+		attachInterrupt(0, pulso, FALLING); //activa interrupcion
 	}
     
 }
@@ -117,11 +135,41 @@ void loop()
 //
 void timerInt(void) //esta calibrado para 1000000us
 {
-	if (contador >= maximoTime) {
-		valTime = true;
-		contador = 0;
+	if (contador2 >= maximo) {
+		contador2 = minimo;
 	}
-	else contador++;
+	else contador2++;
+	/*
+	if (aux == false) {
+		if (contador2 >= maximo) {
+			contador2 = minimo;
+			int x=random(1,10+1);
+			if (x <= 5) aux == false;
+			else aux == true;
+		} 
+		else contador2++;
+	}
+	else {
+		if (contador2 <= minimo) {
+			contador2 = maximo;
+			int x = random(1, 10 + 1);
+			if (x <= 5) aux == true;
+			else aux == false;
+		}
+		else contador2--;
+	}
+	*/
+	if (contador1 >= 100) { //ya 1 segundo
+		contador1 = 0;
+		if (contador >= maximoTime) {
+			valTime = true;
+			contador = 0;
+		}
+		else contador++;
+
+	}
+	else contador1++;
+
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /////   PULSADOR
@@ -133,17 +181,27 @@ void pulso()
 
 	if(tempo==LOW)
 	{
-		int ranTempo;
+		int ranTempo = contador2;
+		bool coincidencia = false;
 		do {
-			ranTempo = random(minimo, maximo+1);
-		} while (randNumber[0] == ranTempo || randNumber[1] == ranTempo);
+			coincidencia = true;
+			for (int i = 0; i < elementos; i++) {
+				if (randNumber[i] == ranTempo) {
+					coincidencia = false;
+				}
+			}
+			if (coincidencia == false) ranTempo = random(minimo, maximo + 1);
+		} while (coincidencia == false);
 
-		randNumber[0] = randNumber[1];
-		randNumber[1] = ranTempo;
+		for (int i = elementos; i >= 0; --i) {
+			randNumber[i] = randNumber[i - 1];
 
-		
-		//Serial.println(randNumber);
+		}
+		randNumber[0] = ranTempo;
+		Serial.print("ALEATORIO: ");
+		Serial.println(randNumber[0]);
 		estado = true;
+		detachInterrupt(0);
 	
 	} 
 }
@@ -178,7 +236,7 @@ void serialEvent() {
 					}
 					else Serial.print("Valor incorrecto!!");
 				}
-				if (cadena[1] == 'l') {
+				else if (cadena[1] == 'l') {
 					int xx = cadena[2] - 48; //decima
 					int yy = cadena[3] - 48; //unidad
 					int zz = cadena[4] - 48; //unidad
@@ -192,12 +250,25 @@ void serialEvent() {
 					}
 					else Serial.print("Valor incorrecto!!");
 				}
-				if (cadena[1]=='t') {
+				else if (cadena[1]=='i') {
 					int xx = cadena[2] - 48; //decima
 					int yy = cadena[3] - 48; //unidad
 					int zz = cadena[4] - 48; //unidad
 
 					if ((xx >= 0 && xx<=3)&&(yy >= 0 || yy <= 9)&&(zz >= 0 || zz <= 9)) {
+						int tempo = xx * 100 + yy * 10 + zz;
+						EEPROM.write(addressInitial, tempo);
+						Serial.print("Cancion inicial: ");
+						Serial.println(tempo);
+					}
+					else Serial.print("Valor incorrecto!!");
+				}
+				else if (cadena[1] == 't') {
+					int xx = cadena[2] - 48; //decima
+					int yy = cadena[3] - 48; //unidad
+					int zz = cadena[4] - 48; //unidad
+
+					if ((xx >= 0 && xx <= 3) && (yy >= 0 || yy <= 9) && (zz >= 0 || zz <= 9)) {
 						int tempo = xx * 100 + yy * 10 + zz;
 						EEPROM.write(addressTime, tempo);
 						Serial.print("Cambio de tiempo: ");
@@ -222,9 +293,9 @@ void serialEvent() {
 					}
 					else Serial.print("Valor incorrecto!!");
 				}
-				else if (cadena[1] == 'c'){
-					Serial.println("Canción actual: ");
-					mp3.qPlaying();
+				else if (cadena[1] == 's'){
+					Serial.println("Canción detenida!! ");
+					mp3.stop();
 
 				}
 				else if (cadena[1] == 'a'){
@@ -233,20 +304,46 @@ void serialEvent() {
 
 				}
 				else if (cadena[1] == 'p'){
-					int ranTempo;
-					do {
-						ranTempo = random(minimo, maximo + 1);
-					} while (randNumber[0] == ranTempo || randNumber[1] == ranTempo);
+					int ranTempo = contador2;
+					bool coincidencia=false;
+					while (coincidencia == false) {
+						coincidencia = true;
+						for (int i = 0; i < elementos; i++) {
+							if (randNumber[i] == ranTempo) {
+								coincidencia = false;
+							}
+						}
+						if (coincidencia == false) ranTempo = random(minimo, maximo + 1);
+					}
 
-					randNumber[0] = randNumber[1];
-					randNumber[1] = ranTempo;
+					for (int i = elementos; i >=0; --i) {
+						randNumber[i] = randNumber[i-1];
+						
+					}
+					randNumber[0] = ranTempo;
 
+					for (int i = 0; i < elementos; i++) {
+						Serial.print(randNumber[i]);
+						Serial.print(',');
+					}
+
+					Serial.print("contador2: ");
+					Serial.println(contador2);
+					Serial.print("aleatorio: ");
 					Serial.println(randNumber[0]);
 					estado = true;
 				}
-				else if (cadena[1] == 'n') {
-					mp3.qTTracks();
-					Serial.println(mp3.numcanciones);
+				else if (cadena[1] == 'r') {
+					int xx = cadena[2] - 48; //decima
+					int yy = cadena[3] - 48; //unidad
+					int zz = cadena[4] - 48; //unidad
+
+					if ((xx >= 0 && xx <= 9) && (yy >= 0 || yy <= 9) && (zz >= 0 || zz <= 9)) {
+						int tempo = xx * 100 + yy * 10 + zz;
+						mp3.play(tempo, volumen);
+					}
+					else Serial.print("Valor incorrecto!!");
+					
 				}
 			}
 			else Serial.println("protocolo equivocado!!");
