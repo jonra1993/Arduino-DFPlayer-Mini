@@ -76,6 +76,8 @@ void setup()
 
   	Serial.println("Reproductor de audio aleatorio.");
 	Serial.println("Desarrollado por: Jonathan Vargas");
+	Serial.println("Email: jonathan.vargas1104@gmail.com");
+	Serial.println("Cel: 0979191234");
   
 	//----Set volume----
 	volumen = EEPROM.read(addressVol);
