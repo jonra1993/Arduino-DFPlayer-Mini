@@ -342,6 +342,7 @@ void serialEvent() {
 
 					if ((xx >= 0 && xx <= 9) && (yy >= 0 || yy <= 9) && (zz >= 0 || zz <= 9)) {
 						int tempo = xx * 100 + yy * 10 + zz;
+						contador = 0;
 						mp3.play(tempo, volumen);
 					}
 					else Serial.print("Valor incorrecto!!");
