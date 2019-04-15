@@ -2,11 +2,11 @@
 This project was exposed in the "Expo Europa 360"  of October 2018 in Quito-Ecuador. It was presented as a ludic activity by the Mercedes Benz stand. This project uses the DFPlayer library for arduino. It controls a mp3 board for playing random song after a button is pushed. The songs are load in a sd-card into the mp3 board. 
 
 <p align="center">
-  <img height="691" width="591" src="https://www.jonathanvargas.ml/wp-content/uploads/2019/04/mercedez2-e1555295182395.jpeg">
+  <img height="691" width="591" src="https://www.jonathanvargas.ml/wp-content/uploads/2019/04/mercedez2-1.jpeg">
 </p>
 
 <p align="center">
-  <img height="941" width="591" src="https://www.jonathanvargas.ml/wp-content/uploads/2019/04/mercedez1-e1555295272556.jpeg">
+  <img height="941" width="591" src="https://www.jonathanvargas.ml/wp-content/uploads/2019/04/mercedez1-1.jpeg">
 </p>
 
 <p align="center">
