@@ -1,7 +1,7 @@
 
 /*************************************************************
  *
- * $Workfile: arduinoDataLogger.ino $
+ * $Workfile: DFPlayer_Keypad.ino $
  *
  * $Creator: Jonathan Vargas $
  *
@@ -25,8 +25,13 @@ char keys[ROWS][COLS] =
 {'7','8','9' },
 {'*','0','#' }
 };
-byte colPins[COLS] = {4, 3, 2};
-byte rowPins[ROWS] = {12, 7, 6, 5};
+
+byte colPins[COLS] = {6, 12, 3}; //{col0,col1,col2,} -> {pin6, pin12, pin3}
+byte rowPins[ROWS] = {7, 2, 4, 5}; //{row0,row1,row2,row3} -> {pin7, pin2, pin4, pin5}
+/* //Membarne keypad
+  byte colPins[COLS] = {4, 3, 2};
+  byte rowPins[ROWS] = {12, 7, 6, 5};
+*/
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 //! DFPlayer definitions
@@ -45,7 +50,6 @@ byte memory = 0;
  *
  ***************************************************************************/
 void setup() {
-  delay(1000);
 
   Serial.begin(19200);
   serialPortOnce.begin(9600);
@@ -54,13 +58,13 @@ void setup() {
   delay(1000);
 
   if (!playerOnce.begin(serialPortOnce)) {  //Use softwareSerial to communicate with mp3.
-//    Serial.println(F("No se ha podido iniciar playerOnce:"));
-//    while(!playerOnce.begin(serialPortOnce));
+  //  Serial.println(F("No conection with playerOnce:"));
+  //  while(!playerOnce.begin(serialPortOnce));
 	}
 
   if (!playerLoop.begin(serialPortLoop)) {  //Use softwareSerial to communicate with mp3.
-//   Serial.println(F("No se ha podido iniciar playerLoop:"));
-//	while(!playerLoop.begin(playerLoop));
+  //  Serial.println(F("No conection with  playerLoop:"));
+	//  while(!playerLoop.begin(serialPortLoop));
 	}
 
   playerOnce.volume(volumen);  //Set volume value (0~30).
