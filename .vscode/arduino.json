@@ -1,0 +1,7 @@
+{
+    "programmer": "AVRISP mkII",
+    "board": "arduino:avr:nano",
+    "configuration": "cpu=atmega328old",
+    "port": "COM3",
+    "sketch": "DFPlayer_Keypad\\DFPlayer_Keypad.ino"
+}

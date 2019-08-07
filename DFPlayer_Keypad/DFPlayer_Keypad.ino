@@ -28,10 +28,10 @@ char keys[ROWS][COLS] =
 
 byte colPins[COLS] = {6, 12, 3}; //{col0,col1,col2,} -> {pin6, pin12, pin3}
 byte rowPins[ROWS] = {7, 2, 4, 5}; //{row0,row1,row2,row3} -> {pin7, pin2, pin4, pin5}
-/* //Membarne keypad
-  byte colPins[COLS] = {4, 3, 2};
-  byte rowPins[ROWS] = {12, 7, 6, 5};
-*/
+ //Membrane keypad
+//  byte colPins[COLS] = {4, 3, 2};
+//  byte rowPins[ROWS] = {12, 7, 6, 5};
+
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 //! DFPlayer definitions
@@ -144,7 +144,7 @@ void playKey(char key) {
       playerLoop.stop(); 
       memory = 0;
     }
-    else {
+    else{
       playerLoop.loop(1);
       memory = 1;
     }
@@ -154,7 +154,7 @@ void playKey(char key) {
       playerLoop.stop();
       memory = 0;
     }
-    else {
+    else{
       playerLoop.loop(2);
       memory = 2;
     }
@@ -164,7 +164,7 @@ void playKey(char key) {
       playerLoop.stop();
       memory = 0;
     }
-    else {
+    else{
       playerLoop.loop(3);
       memory = 3;
     }
